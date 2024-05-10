@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/render"
 	"github.com/redis/go-redis/v9"
@@ -31,25 +32,29 @@ func (rHandlers RequestHandlers) HandleIncommingRequest(w http.ResponseWriter, r
 		r.Header["user_id"][0],
 		rHandlers.InMemoryServices.RedisClients.RedisClientForMinuteQuota,
 	)
+	//bind to new variable
+	data := &dto.UserRequest{}
+	if err := render.Bind(r, data); err != nil {
+		render.Render(w, r, dto.ErrInvalidRequest(err))
+		return
+	}
 	if remainedMinuteQuota > 0 && remainedMonthQuota > 0 {
-		data := &dto.UserRquest{}
-		if err := render.Bind(r, data); err != nil {
-			render.Render(w, r, dto.ErrInvalidRequest(err))
-			return
-		}
+
 		processData(
 			context.Background(),
 			data.DataToBeProcess,
 			false,
 			rHandlers.InMemoryServices.RedisClients.RedisClientForDataProcessed,
-			w, r)
-		// article := data.Article
-		// dbNewArticle(article)
-
-		// render.Status(r, http.StatusCreated)
-		// render.Render(w, r, NewArticleResponse(article))
+			w)
+		return
 	}
-	w.Write([]byte("welcome"))
+	processData(
+		context.Background(),
+		data.DataToBeProcess,
+		true,
+		rHandlers.InMemoryServices.RedisClients.RedisClientForDataProcessed,
+		w)
+
 }
 
 func processData(
@@ -58,20 +63,25 @@ func processData(
 	useOnlyCache bool,
 	dataProcessingCacheDb *redis.Client,
 	w http.ResponseWriter,
-	r *http.Request,
 ) {
-	_, err := dataProcessingCacheDb.Get(ctx, dataToBeProcessed).Result()
-	if err == redis.Nil {
-		if useOnlyCache {
+	processedDataInString, err := dataProcessingCacheDb.Get(ctx, dataToBeProcessed).Result()
+	if err == redis.Nil { //we could not find it in cache so process it if user has accessed in his quota
+		if useOnlyCache { // user exceeded its quota so send it error message
 			w.WriteHeader(http.StatusNonAuthoritativeInfo)
 			result, _ := json.Marshal(dto.UserResponse{Data: "not authorized"})
 			w.Write(result)
-		} else {
-			dataprocessed := strconv.Itoa(rand.Int())
-			dataProcessingCacheDb.Set(ctx, dataToBeProcessed, dataprocessed, 0)
-			w.WriteHeader(http.StatusNonAuthoritativeInfo)
+		} else { // user is within his quota so send processed message
+			dataprocessed := strconv.Itoa(rand.Int()) //processing data as generating random value
+			//put processed message in processing cachedb
+			//set expire time to auto destroy unused data
+			dataProcessingCacheDb.SetNX(ctx, dataToBeProcessed, dataprocessed, 10*time.Minute)
+			w.WriteHeader(http.StatusOK)
 			result, _ := json.Marshal(dto.UserResponse{Data: dataprocessed})
 			w.Write(result)
 		}
+	} else if err == nil { // we could find it in cache so send it any way
+		w.WriteHeader(http.StatusOK)
+		result, _ := json.Marshal(dto.UserResponse{Data: processedDataInString})
+		w.Write(result)
 	}
 }

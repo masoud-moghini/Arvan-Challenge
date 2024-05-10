@@ -9,10 +9,7 @@ Async Queue Processing is a simple application to process incomming requests asy
  - PostgreSQL in order to serve as database
 
 
-## Architectural Concepts
+## how to run program
+ * this program is not tested totally buy consider cmd/main as start point of the program
 
- - Segregation of Event types as
-	 - *Integration event*: A state change that is communicated outside of its bounded context  
-	 - *Command*: A request to perform work  
-	 - *Query*: A request for some information  
-	 - *Reply*: An informational response to either a command or query
+

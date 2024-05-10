@@ -1,9 +1,9 @@
 version: "3.8"
 
 services:
-  monolith:
-    container_name: monolith
-    hostname: monolith
+  async_challenge:
+    container_name: async_challenge
+    hostname: async_challenge
     build:
       context: .
       dockerfile: docker/Dockerfile
@@ -14,20 +14,19 @@ services:
       - docker/.env
     depends_on:
       - redis
-      - postgres
-    command: [ "./wait-for", "postgres:5432", "--", "/mallbots/monolith" ]
-  postgres:
-    container_name: postgres
-    hostname: postgres
-    image: postgres:12-alpine
-    restart: always
-    environment:
-      POSTGRES_PASSWORD: itsasecret
-    ports:
-      - '5432:5432'
-    volumes:
-      - 'pgdata:/var/lib/postgresql/data'
-      - './docker/database:/docker-entrypoint-initdb.d'
+      #- postgres
+  # postgres:
+  #   container_name: postgres
+  #   hostname: postgres
+  #   image: postgres:12-alpine
+  #   restart: always
+  #   environment:
+  #     POSTGRES_PASSWORD: itsasecret
+  #   ports:
+  #     - '5432:5432'
+  #   volumes:
+  #     - 'pgdata:/var/lib/postgresql/data'
+  #     - './docker/database:/docker-entrypoint-initdb.d'
 
   redis:
     image: 'bitnami/redis:latest'
@@ -35,8 +34,8 @@ services:
       - ALLOW_EMPTY_PASSWORD=yes
     volumes:
       - ./redis-persistence:/bitnami/redis/data
-    depends_on:
-      - postgres
+    # depends_on:
+    #   - postgres
 volumes:
   pgdata:
   jsdata:

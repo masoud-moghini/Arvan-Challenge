@@ -1,6 +1,6 @@
 FROM golang:1.18-alpine AS builder
 
-WORKDIR /mallbots
+WORKDIR /async-challenge
 
 # Retrieve application dependencies.
 # This allows the container build to reuse cached dependencies.
@@ -12,7 +12,7 @@ RUN go mod download
 COPY .. ./
 
 # Build the binary.
-RUN go build -ldflags="-s -w" -v -o monolith ./cmd/mallbots
+RUN go build -ldflags="-s -w" -v -o queueprocessor ./cmd/
 
 FROM alpine:latest AS runtime
 
@@ -20,6 +20,6 @@ COPY --from=builder /mallbots/docker/wait-for .
 RUN chmod +x /wait-for
 
 # Copy the binary to the production image from the builder stage.
-COPY --from=builder /mallbots/monolith /mallbots/monolith
+COPY --from=builder /async-challenge/queueprocessor /async-challenge/queueprocessor
 
-CMD ["/mallbots/monolith"]
+CMD ["/async-challenge/queueprocessor"]

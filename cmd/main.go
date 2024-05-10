@@ -18,12 +18,28 @@ func main() {
 }
 func InitiateConfigs() application.Application {
 
+	//initiate application configurations
 	var cfg config.AppConfig = config.InitConfig()
 
 	var redisClients rds.RedisClients = rds.RedisClients{
+		//for caching users minute quota
+		//this kept using expiration time
+		//if users minute quota has been expired, it will be restored from Relational db
 		RedisClientForMinuteQuota: rds.RedisClientForMinuteQuota(cfg),
-		RedisClientForMonthQuota:  rds.RedisClientForMonthQuota(cfg),
+
+		//for caching users monthly quota and last activation value
+		//db size is limited to CONSTANT number of last active users
+		//if users minute quota does not exist, it will be restored from Relational db
+		//a specific job exists to keep size of db size, runs asyncronously with go
+		RedisClientForMonthQuota: rds.RedisClientForMonthQuota(cfg),
+
+		//for caching processed data
+		//db size is kept by using expiration keys
+		//if requested data exists in cache, it will returned back to user, irrespective of his quota
+		RedisClientForDataProcessed: rds.RedisClientForDataProcessing(cfg),
 	}
+
+	//define request handler and pass it to application
 	var routerHandler router.RouterHandler = router.RouterHandler{
 		Routes: chi.NewMux(),
 		RequestHandlers: router.RequestHandlers{
@@ -33,7 +49,12 @@ func InitiateConfigs() application.Application {
 			},
 		},
 	}
+
+	//users remaining quota is kept in relational database
+	//it is intervally synchronized with redis cache
+	//WE HAVE NOT IMPLEMENTED RELATIONAL DATABASE TO PERSIST USERS QUOTA!
 	var databaseClient *sql.DB = pg.GetDB(cfg)
+
 	return application.Application{
 		Config:       cfg,
 		Router:       routerHandler,

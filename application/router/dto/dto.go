@@ -6,12 +6,12 @@ import (
 	"github.com/go-chi/render"
 )
 
-type UserRquest struct {
+type UserRequest struct {
 	DataToBeProcess string
 }
 
 // Bind implements render.Binder.
-func (u *UserRquest) Bind(r *http.Request) error {
+func (u *UserRequest) Bind(r *http.Request) error {
 	return nil
 }
 

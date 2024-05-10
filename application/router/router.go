@@ -25,6 +25,6 @@ func (routerHandler RouterHandler) Listen() {
 		routerHandler.RequestHandlers.HandleIncommingRequest(w, r)
 
 	})
-	http.ListenAndServe(":3000", routerHandler.routes)
+	http.ListenAndServe(":3000", routerHandler.Routes)
 	fmt.Println("hi")
 }
