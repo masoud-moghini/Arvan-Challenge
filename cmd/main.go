@@ -6,7 +6,11 @@ import (
 	"arvan-challenge/application/pg"
 	"arvan-challenge/application/rds"
 	"arvan-challenge/application/router"
+	"arvan-challenge/application/syncjobs"
 	"database/sql"
+	"log"
+
+	"github.com/go-co-op/gocron/v2"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -53,12 +57,32 @@ func InitiateConfigs() application.Application {
 	//users remaining quota is kept in relational database
 	//it is intervally synchronized with redis cache
 	//WE HAVE NOT IMPLEMENTED RELATIONAL DATABASE TO PERSIST USERS QUOTA!
-	var databaseClient *sql.DB = pg.GetDB(cfg)
-
+	databaseQueries := InitiateRelationalDataBase(cfg)
 	return application.Application{
-		Config:       cfg,
-		Router:       routerHandler,
-		RedisClients: redisClients,
-		PQsql:        databaseClient,
+		Config:                cfg,
+		Router:                routerHandler,
+		RedisClients:          redisClients,
+		DatabaseQueries:       databaseQueries,
+		ApplicationJobRunners: InitiateRunnersAndJobs(databaseQueries),
 	}
+}
+
+func InitiateRelationalDataBase(cfg config.AppConfig) pg.DatabaseQueries {
+	db, err := sql.Open("postgres", cfg.PGConfig.PG_CONN)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return pg.DatabaseQueries{DBObject: db}
+}
+func InitiateRunnersAndJobs(queries pg.DatabaseQueries) syncjobs.Runners {
+	s, err := gocron.NewScheduler()
+	if err != nil {
+		// handle error
+		panic(err)
+	}
+	runner := syncjobs.Runners{
+		MaximumCacheSlotInMonthlyQuota: 500,
+	}
+	runner.Synchronize(queries, s)
+	return runner
 }
