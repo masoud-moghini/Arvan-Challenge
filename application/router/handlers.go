@@ -74,5 +74,4 @@ func processData(
 			w.Write(result)
 		}
 	}
-
 }
