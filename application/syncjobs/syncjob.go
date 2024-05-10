@@ -11,16 +11,19 @@ import (
 )
 
 type SyncWithDatabase interface {
-	Synchronize(queries pg.DatabaseQueries, s gocron.Scheduler)
+	Synchronize(queries pg.Queries, s gocron.Scheduler)
 }
 type Runners struct {
 	MaximumCacheSlotInMonthlyQuota uint32
 	Job                            gocron.Job
 	RedisMonthlyQuotaCache         *redis.Client
-	DatabaseQueries                pg.DatabaseQueries
+	DatabaseQueries                pg.Queries
 }
 
-func (r Runners) Synchronize(queries pg.DatabaseQueries, s gocron.Scheduler) {
+// the method receives an interface of RelationalQueries
+// implementation was not passed intentionally in order to preserve abstraction
+// so sql.DB is not available in this function directly !!!!
+func (r Runners) Synchronize(queries pg.Queries, s gocron.Scheduler) {
 	sortedKeys := map[string]string{}
 	r.Job, _ = s.NewJob(
 		gocron.DurationJob(

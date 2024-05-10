@@ -9,7 +9,7 @@ import (
 
 type (
 	Queries interface {
-		PreserveUsersRemainingQuotaInsideDatabase(user_id string, remaining_quota int)
+		PreserveUsersRemainingQuotaInsideDatabase(user_id string, remaining_quota string)
 	}
 	DatabaseQueries struct {
 		DBObject *sql.DB

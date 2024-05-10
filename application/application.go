@@ -13,6 +13,6 @@ type Application struct {
 	Config                config.AppConfig
 	Router                router.Router
 	RedisClients          rds.RedisClients
-	DatabaseQueries       pg.DatabaseQueries
+	DatabaseQueries       pg.Queries
 	ApplicationJobRunners syncjobs.Runners
 }
