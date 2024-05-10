@@ -14,15 +14,14 @@ type (
 		Listen()
 	}
 	RouterHandler struct {
-		routes          *chi.Mux
+		Routes          *chi.Mux
 		RequestHandlers RequestHandlers
 	}
 )
 
 func (routerHandler RouterHandler) Listen() {
-	routerHandler.routes = chi.NewRouter()
-	routerHandler.routes.Use(middleware.Logger)
-	routerHandler.routes.Post("/", func(w http.ResponseWriter, r *http.Request) {
+	routerHandler.Routes.Use(middleware.Logger)
+	routerHandler.Routes.Post("/", func(w http.ResponseWriter, r *http.Request) {
 		routerHandler.RequestHandlers.HandleIncommingRequest(w, r)
 
 	})

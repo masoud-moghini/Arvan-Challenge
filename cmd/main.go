@@ -7,6 +7,8 @@ import (
 	"arvan-challenge/application/rds"
 	"arvan-challenge/application/router"
 	"database/sql"
+
+	"github.com/go-chi/chi/v5"
 )
 
 func main() {
@@ -21,10 +23,11 @@ func InitiateConfigs() application.Application {
 	var redisClients rds.RedisClients = rds.RedisClients{
 		RedisClientForMinuteQuota: rds.RedisClientForMinuteQuota(cfg),
 		RedisClientForMonthQuota:  rds.RedisClientForMonthQuota(cfg),
-		RedisClientForTimestamp:   rds.RedisClientForTimestamp(cfg),
 	}
 	var routerHandler router.RouterHandler = router.RouterHandler{
+		Routes: chi.NewMux(),
 		RequestHandlers: router.RequestHandlers{
+
 			InMemoryServices: rds.InMemoryServices{
 				RedisClients: redisClients,
 			},
