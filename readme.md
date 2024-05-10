@@ -6,7 +6,6 @@ Async Queue Processing is a simple application to process incomming requests asy
 
 ## Tools that was used
 
- - [NATS JetStream](https://docs.nats.io/nats-concepts/jetstream), for additional utilities with NATS.
  - PostgreSQL in order to serve as database
 
 
