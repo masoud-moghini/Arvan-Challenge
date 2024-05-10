@@ -7,6 +7,8 @@ Async Queue Processing is a simple application to process incomming requests asy
 ## Tools that was used
 
  - PostgreSQL in order to serve as database
+ - Redis in order to have a consistent distributed caching database
+ - go-chi for serving http requests
 
 
 ## how to run program
