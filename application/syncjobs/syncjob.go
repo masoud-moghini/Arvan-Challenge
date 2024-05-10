@@ -58,5 +58,6 @@ func (r Runners) Synchronize(queries pg.Queries, s gocron.Scheduler) {
 			r.RedisMonthlyQuotaCache,
 		),
 	)
+
 	//todo add jobs for preserving all values periodically
 }
