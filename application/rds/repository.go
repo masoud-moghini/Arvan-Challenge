@@ -26,12 +26,14 @@ func (i InMemoryServices) GetAndDecreaseMonthlyQuota(ctx context.Context, user_i
 		//recover monthly quota to redis
 		val = recoverUserQuotaFromPersistanceDb(user_id)
 	} else if err != nil {
-		return nil, errors.New("unexpected error in retrieving cached value")
+		fmt.Println("failed process data %+v\n", err)
+		return 0, errors.New("unexpected error in retrieving cached value")
 	}
 
 	valInNumber, err := strconv.Atoi(val)
 	if err != nil {
-		return nil, errors.New("unexpected error in retrieving cached value")
+		fmt.Println("failed process data %+v\n", err)
+		return 0, errors.New("unexpected error in retrieving cached value")
 	}
 	if valInNumber > 0 {
 		valInNumber -= 1
@@ -52,14 +54,14 @@ func (i InMemoryServices) GetAndDecreaseMinuteQuota(ctx context.Context, user_id
 		val = recoverUserMinuteQuotaFromPersistanceDb(user_id)
 	}
 	if err != nil {
-		fmt.Errorf(err)
-		return nil, errors.New("unexpected error in retrieving cache value")
+		fmt.Println("failed process data %+v\n", err)
+		return 0, errors.New("unexpected error in retrieving cache value")
 	}
 
 	valInNumber, err := strconv.Atoi(val)
 	if err != nil {
-		fmt.Errorf(err)
-		return nil, errors.New("unexpected error in retrieving cache value")
+		fmt.Println("failed process data %+v\n", err)
+		return 0, errors.New("unexpected error in retrieving cache value")
 	}
 	if valInNumber > 0 {
 		valInNumber -= 1
