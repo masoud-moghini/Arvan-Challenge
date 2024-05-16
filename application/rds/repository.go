@@ -2,6 +2,8 @@ package rds
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -16,21 +18,20 @@ type (
 
 // returns user remained quota and decrease it if its value > 0
 // if value is not present in cache, restore it from database
-func (i InMemoryServices) GetAndDecreaseMonthlyQuota(ctx context.Context, user_id string, clientForMonthQuota *redis.Client) int {
+func (i InMemoryServices) GetAndDecreaseMonthlyQuota(ctx context.Context, user_id string, clientForMonthQuota *redis.Client) (int, error) {
 	val, err := clientForMonthQuota.HGet(ctx, user_id, "remaining_quota").Result()
 
 	if err == redis.Nil {
 
 		//recover monthly quota to redis
 		val = recoverUserQuotaFromPersistanceDb(user_id)
-	}
-	if err != nil {
-		panic(err)
+	} else if err != nil {
+		return nil, errors.New("unexpected error in retrieving cached value")
 	}
 
 	valInNumber, err := strconv.Atoi(val)
 	if err != nil {
-		panic(err)
+		return nil, errors.New("unexpected error in retrieving cached value")
 	}
 	if valInNumber > 0 {
 		valInNumber -= 1
@@ -40,9 +41,9 @@ func (i InMemoryServices) GetAndDecreaseMonthlyQuota(ctx context.Context, user_i
 		"remaining_quota", valInNumber,
 		"last_hit", time.Now().String(),
 	)
-	return valInNumber
+	return valInNumber, nil
 }
-func (i InMemoryServices) GetAndDecreaseMinuteQuota(ctx context.Context, user_id string, clientForMinuteQuota *redis.Client) int {
+func (i InMemoryServices) GetAndDecreaseMinuteQuota(ctx context.Context, user_id string, clientForMinuteQuota *redis.Client) (int, error) {
 	val, err := clientForMinuteQuota.Get(ctx, user_id).Result()
 
 	if err == redis.Nil {
@@ -51,19 +52,21 @@ func (i InMemoryServices) GetAndDecreaseMinuteQuota(ctx context.Context, user_id
 		val = recoverUserMinuteQuotaFromPersistanceDb(user_id)
 	}
 	if err != nil {
-		panic(err)
+		fmt.Errorf(err)
+		return nil, errors.New("unexpected error in retrieving cache value")
 	}
 
 	valInNumber, err := strconv.Atoi(val)
 	if err != nil {
-		panic(err)
+		fmt.Errorf(err)
+		return nil, errors.New("unexpected error in retrieving cache value")
 	}
 	if valInNumber > 0 {
 		valInNumber -= 1
 	}
 
 	defer clientForMinuteQuota.HSetNX(ctx, user_id, strconv.Itoa(valInNumber), 1*time.Minute)
-	return valInNumber
+	return valInNumber, nil
 }
 
 func recoverUserMinuteQuotaFromPersistanceDb(user_id string) string {

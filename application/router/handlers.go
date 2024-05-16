@@ -5,6 +5,7 @@ import (
 	"arvan-challenge/application/router/dto"
 	"context"
 	"encoding/json"
+	"errors"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -21,21 +22,36 @@ type (
 )
 
 func (rHandlers RequestHandlers) HandleIncommingRequest(w http.ResponseWriter, r *http.Request) {
-	var remainedMinuteQuota int = rHandlers.InMemoryServices.GetAndDecreaseMinuteQuota(
+	userId := r.Header.Get("user_id")
+	if userId == "" {
+		render.Render(w, r, dto.ErrInvalidRequest(
+			errors.New("user id is nil"), http.StatusInternalServerError, "invalid Request"))
+		return
+	}
+	remainedMinuteQuota, errInGettingMinuteQuota := rHandlers.InMemoryServices.GetAndDecreaseMinuteQuota(
 		context.Background(),
-		r.Header["user_id"][0],
+		userId,
 		rHandlers.InMemoryServices.RedisClients.RedisClientForMinuteQuota,
 	)
-
-	var remainedMonthQuota int = rHandlers.InMemoryServices.GetAndDecreaseMonthlyQuota(
+	if errInGettingMinuteQuota != nil {
+		render.Render(w, r, dto.ErrInvalidRequest(
+			errInGettingMinuteQuota, http.StatusInternalServerError, "Internal Server Err"))
+		return
+	}
+	remainedMonthQuota, errInGettingnMonthQuota := rHandlers.InMemoryServices.GetAndDecreaseMonthlyQuota(
 		context.Background(),
-		r.Header["user_id"][0],
+		userId,
 		rHandlers.InMemoryServices.RedisClients.RedisClientForMinuteQuota,
 	)
+	if errInGettingMinuteQuota != nil {
+		render.Render(w, r, dto.ErrInvalidRequest(
+			errInGettingnMonthQuota, http.StatusInternalServerError, "Internal Server Err"))
+		return
+	}
 	//bind to new variable
 	data := &dto.UserRequest{}
 	if err := render.Bind(r, data); err != nil {
-		render.Render(w, r, dto.ErrInvalidRequest(err))
+		render.Render(w, r, dto.ErrInvalidRequest(err, http.StatusBadRequest, "Invalid Request."))
 		return
 	}
 	if remainedMinuteQuota > 0 && remainedMonthQuota > 0 {
